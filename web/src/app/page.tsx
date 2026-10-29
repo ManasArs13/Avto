@@ -10,10 +10,10 @@ export default function Home() {
     <div className="space-y-10">
       <section className="card px-5 py-8 sm:px-10 sm:py-12">
         <h1 className="max-w-2xl text-3xl font-black tracking-tight sm:text-4xl">
-          Запчасти по артикулу — <span className="text-accent">оригинал и аналоги</span>
+          Оригинальные запчасти <span className="text-accent">ВАЗ</span> — по номеру и по машине
         </h1>
         <p className="mt-3 max-w-2xl text-muted">
-          Введите номер детали в любом формате: с пробелами, дефисами, кириллицей вместо латиницы — найдём.
+          LADA Vesta, Granta, Largus, Niva и классика. Введите каталожный номер в любом формате или выберите автомобиль.
         </p>
         <div className="mt-6 max-w-2xl">
           <SearchForm large />

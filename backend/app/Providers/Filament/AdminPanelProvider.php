@@ -29,6 +29,10 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->brandName('Avto — админка')
+            ->brandLogo(asset('admin-assets/logo.svg'))
+            ->darkModeBrandLogo(asset('admin-assets/logo-dark.svg'))
+            ->brandLogoHeight('2.25rem')
+            ->favicon(asset('admin-assets/favicon.svg'))
             ->navigationGroups(['Продажи', 'Каталог', 'Закупки', 'Автомобили'])
             ->colors([
                 'primary' => Color::Orange,
