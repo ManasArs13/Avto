@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Offer;
 use App\Models\Product;
 use App\Support\Article;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\AbstractPaginator;
 use Illuminate\Support\Collection;
 
@@ -26,7 +27,7 @@ class CatalogSearch
         if (mb_strlen($normalized) >= 3) {
             $products = Product::query()
                 ->where('is_active', true)
-                ->where('article_normalized', $normalized)
+                ->where(fn ($q) => $this->whereArticle($q, $normalized))
                 ->with('brand')
                 ->limit($limit)
                 ->get();
@@ -41,6 +42,26 @@ class CatalogSearch
         }
 
         return $this->withBestOffers($products);
+    }
+
+    /**
+     * Точное совпадение артикула, а для номеров ВАЗ — все варианты записи
+     * (старый 4-значный код модели, с суффиксом исполнения и без).
+     */
+    private function whereArticle(Builder $query, string $normalized): void
+    {
+        $query->where('article_normalized', $normalized);
+
+        if ($stem = Article::vazStem($normalized)) {
+            $query->orWhere(fn ($q) => $q
+                ->where('article_normalized', 'like', $stem.'%')
+                ->whereRaw('length(article_normalized) <= 14'));
+
+            // "21080..." по-старому записывали как "2108..."
+            if ($stem[4] === '0') {
+                $query->orWhere('article_normalized', substr($stem, 0, 4).substr($stem, 5));
+            }
+        }
     }
 
     /**

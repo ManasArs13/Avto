@@ -24,6 +24,24 @@ class Article
     }
 
     /**
+     * Общая часть каталожного номера ВАЗ без суффикса исполнения.
+     *
+     * У ВАЗ один и тот же номер пишут по-старому и по-новому:
+     *   "2108-3501080"     (код модели 4 цифры)      -> "210803501080"
+     *   "21080-3501080"    (5 цифр, без суффикса)    -> "210803501080"
+     *   "21080-3501080-00" (с суффиксом исполнения)  -> "210803501080"
+     * Для прочих артикулов возвращает null.
+     */
+    public static function vazStem(string $normalized): ?string
+    {
+        return match (true) {
+            (bool) preg_match('/^\d{11}$/', $normalized) => substr($normalized, 0, 4).'0'.substr($normalized, 4),
+            (bool) preg_match('/^\d{12}(\d{2})?$/', $normalized) => substr($normalized, 0, 12),
+            default => null,
+        };
+    }
+
+    /**
      * Бренды из прайсов: "Mann-Filter", "MANN FILTER" -> "MANNFILTER".
      */
     public static function normalizeBrand(?string $brand): string

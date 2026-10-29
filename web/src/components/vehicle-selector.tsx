@@ -8,12 +8,14 @@ import { setSelectedCar, useSelectedCar } from "@/lib/car";
 /**
  * Марка → модель → модификация. Марки приходят с сервера (кэшируются),
  * модели и модификации подгружаются в браузере по выбору.
+ * Если марка одна (магазин LADA), модели приходят сразу, а выбор марки скрыт.
  */
-export function VehicleSelector({ makes }: { makes: CarMake[] }) {
+export function VehicleSelector({ makes, initialModels = [] }: { makes: CarMake[]; initialModels?: CarModel[] }) {
+  const singleMake = makes.length === 1;
   const selected = useSelectedCar();
-  const [models, setModels] = useState<CarModel[]>([]);
+  const [models, setModels] = useState<CarModel[]>(initialModels);
   const [modifications, setModifications] = useState<CarModification[]>([]);
-  const [makeId, setMakeId] = useState("");
+  const [makeId, setMakeId] = useState(singleMake ? String(makes[0].id) : "");
   const [modelId, setModelId] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -59,15 +61,17 @@ export function VehicleSelector({ makes }: { makes: CarMake[] }) {
   }
 
   return (
-    <div className="grid gap-2 sm:grid-cols-3">
-      <select className="input" value={makeId} onChange={(e) => onMake(e.target.value)} aria-label="Марка">
-        <option value="">Марка</option>
-        {makes.map((m) => (
-          <option key={m.id} value={m.id}>
-            {m.name}
-          </option>
-        ))}
-      </select>
+    <div className={`grid gap-2 ${singleMake ? "sm:grid-cols-2" : "sm:grid-cols-3"}`}>
+      {!singleMake && (
+        <select className="input" value={makeId} onChange={(e) => onMake(e.target.value)} aria-label="Марка">
+          <option value="">Марка</option>
+          {makes.map((m) => (
+            <option key={m.id} value={m.id}>
+              {m.name}
+            </option>
+          ))}
+        </select>
+      )}
       <select
         className="input"
         value={modelId}

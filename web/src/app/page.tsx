@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { CategoryLinks } from "@/components/category-links";
 import { SearchForm } from "@/components/search-form";
 import { VehicleSelector } from "@/components/vehicle-selector";
-import { getCarMakes, getCategories } from "@/lib/data";
+import { getCarMakes, getCarModels, getCategories } from "@/lib/data";
 
 export default function Home() {
   return (
@@ -20,7 +20,7 @@ export default function Home() {
         </div>
         <div className="mt-3 flex flex-wrap gap-2 text-sm text-muted">
           Например:
-          {["04465-33450", "90915YZZD4", "W 68/3", "фильтр салонный"].map((q) => (
+          {["2108-3501080", "21080101200508", "W 914/2", "ремень ГРМ"].map((q) => (
             <a key={q} href={`/search?q=${encodeURIComponent(q)}`} className="article text-foreground hover:text-accent">
               {q}
             </a>
@@ -40,12 +40,14 @@ async function CatalogSections() {
   // Ответы всё равно кэшируются (use cache в lib/data.ts).
   await connection();
   const [categories, makes] = await Promise.all([getCategories(), getCarMakes()]);
+  // Магазин одной марки (LADA): модели загружаем сразу, без выбора марки.
+  const models = makes.length === 1 ? await getCarModels(makes[0].id) : [];
 
   return (
     <>
       <section className="card p-5">
         <h2 className="mb-3 text-lg font-bold">Подбор по автомобилю</h2>
-        <VehicleSelector makes={makes} />
+        <VehicleSelector makes={makes} initialModels={models} />
       </section>
 
       <section>

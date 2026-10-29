@@ -18,6 +18,12 @@ export async function getCarMakes() {
   return api.vehicles.makes();
 }
 
+export async function getCarModels(makeId: number) {
+  "use cache";
+  cacheLife("hours");
+  return api.vehicles.models(makeId);
+}
+
 export async function getCarModification(id: number) {
   "use cache";
   cacheLife("hours");
