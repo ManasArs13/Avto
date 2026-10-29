@@ -1,8 +1,28 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { Breadcrumbs } from "@/components/breadcrumbs";
+import { Pagination, parsePage } from "@/components/pagination";
 import { ProductRow } from "@/components/product-card";
 import { getCarModification, getCategories, getCategoryProducts } from "@/lib/data";
+
+async function findCategory(slug: string) {
+  const categories = await getCategories();
+  return categories.flatMap((c) => [c, ...(c.children ?? [])]).find((c) => c.slug === slug);
+}
+
+export async function generateMetadata(props: PageProps<"/catalog/[slug]">): Promise<Metadata> {
+  const { slug } = await props.params;
+  const category = await findCategory(slug);
+  if (!category) return { title: "Категория не найдена" };
+  return {
+    title: `${category.name} ВАЗ (LADA)`,
+    description: `${category.name} для автомобилей LADA: оригинальные запчасти ВАЗ и аналоги, цены и наличие.`,
+    // Фильтр по машине и номер страницы — варианты одной и той же страницы.
+    alternates: { canonical: `/catalog/${slug}` },
+  };
+}
 
 export default function CatalogPage(props: PageProps<"/catalog/[slug]">) {
   return (
@@ -16,26 +36,21 @@ async function CategoryProducts({ params, searchParams }: PageProps<"/catalog/[s
   const { slug } = await params;
   const { car, page } = await searchParams;
   const carId = typeof car === "string" && /^\d+$/.test(car) ? Number(car) : undefined;
-  const pageNum = typeof page === "string" && /^\d+$/.test(page) ? Number(page) : 1;
+  const pageNum = parsePage(page);
 
-  const [categories, result, modification] = await Promise.all([
-    getCategories(),
+  const [category, result, modification] = await Promise.all([
+    findCategory(slug),
     getCategoryProducts(slug, carId, pageNum),
     carId ? getCarModification(carId) : null,
   ]);
   if (!result) notFound();
 
-  const category = categories.flatMap((c) => [c, ...(c.children ?? [])]).find((c) => c.slug === slug);
-  const pageLink = (p: number) => `/catalog/${slug}?${new URLSearchParams({ ...(carId ? { car: String(carId) } : {}), page: String(p) })}`;
+  const pageLink = (p: number) =>
+    `/catalog/${slug}?${new URLSearchParams({ ...(carId ? { car: String(carId) } : {}), page: String(p) })}`;
 
   return (
     <div className="space-y-4">
-      <nav className="text-sm text-muted">
-        <Link href="/" className="hover:text-accent">
-          Главная
-        </Link>{" "}
-        / {category?.name}
-      </nav>
+      <Breadcrumbs items={[{ name: category?.name ?? "Каталог" }]} />
       <h1 className="text-2xl font-bold">{category?.name ?? "Каталог"}</h1>
 
       {modification && (
@@ -59,23 +74,7 @@ async function CategoryProducts({ params, searchParams }: PageProps<"/catalog/[s
         </div>
       )}
 
-      {result.meta.last_page > 1 && (
-        <div className="flex justify-center gap-2">
-          {pageNum > 1 && (
-            <Link href={pageLink(pageNum - 1)} className="btn-ghost">
-              ← Назад
-            </Link>
-          )}
-          <span className="px-3 py-2 text-sm text-muted">
-            {pageNum} из {result.meta.last_page}
-          </span>
-          {pageNum < result.meta.last_page && (
-            <Link href={pageLink(pageNum + 1)} className="btn-ghost">
-              Вперёд →
-            </Link>
-          )}
-        </div>
-      )}
+      <Pagination page={pageNum} lastPage={result.meta.last_page} href={pageLink} />
     </div>
   );
 }

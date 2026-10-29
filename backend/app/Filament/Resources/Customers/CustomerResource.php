@@ -6,6 +6,7 @@ use App\Filament\Resources\Customers\Pages\ManageCustomers;
 use App\Models\Customer;
 use BackedEnum;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -93,6 +94,7 @@ class CustomerResource extends Resource
             ])
             ->defaultSort('created_at', 'desc')
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
             ]);
     }

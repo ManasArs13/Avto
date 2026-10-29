@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CarModels\RelationManagers;
 
+use App\Filament\Concerns\ReadOnlyForViewers;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -14,6 +15,8 @@ use Filament\Tables\Table;
 
 class ModificationsRelationManager extends RelationManager
 {
+    use ReadOnlyForViewers;
+
     protected static string $relationship = 'modifications';
 
     protected static ?string $title = 'Модификации';

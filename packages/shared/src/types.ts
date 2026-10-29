@@ -44,6 +44,27 @@ export interface Product {
 export interface ProductDetails {
   product: Product & { offers: Offer[] };
   analogs: (Product & { offers: Offer[] })[];
+  /** Модели, к которым подходит деталь (ссылки на страницы /cars/...). */
+  fits: CarModelRef[];
+}
+
+export interface CarModelRef {
+  make: { name: string; slug: string };
+  model: { name: string; slug: string };
+}
+
+/** Страница «Запчасти LADA Vesta». */
+export interface CarModelPage {
+  make: CarMake;
+  model: CarModel;
+  modifications: CarModification[];
+  categories: (Omit<Category, "children"> & { products_count: number; parent: { name: string; slug: string } })[];
+}
+
+export interface SitemapData {
+  categories: string[];
+  models: { make: string; model: string; categories: string[] }[];
+  product_pages: number;
 }
 
 export interface CarMake {
@@ -75,8 +96,16 @@ export interface CarModificationDetails {
   id: number;
   name: string;
   title: string;
-  make: { id: number; name: string };
-  model: { id: number; name: string };
+  make: { id: number; name: string; slug: string };
+  model: { id: number; name: string; slug: string };
+}
+
+/** Автомобиль в «моём гараже». */
+export interface GarageVehicle {
+  id: number;
+  name: string | null;
+  vin: string | null;
+  modification: CarModificationDetails;
 }
 
 export interface Labeled<T extends string = string> {

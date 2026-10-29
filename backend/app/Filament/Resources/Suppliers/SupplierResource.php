@@ -6,10 +6,12 @@ use App\Enums\SupplierType;
 use App\Filament\Resources\Suppliers\Pages\CreateSupplier;
 use App\Filament\Resources\Suppliers\Pages\EditSupplier;
 use App\Filament\Resources\Suppliers\Pages\ListSuppliers;
+use App\Filament\Resources\Suppliers\Pages\ViewSupplier;
 use App\Filament\Resources\Suppliers\RelationManagers\PriceImportsRelationManager;
 use App\Models\Supplier;
 use BackedEnum;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -128,6 +130,7 @@ class SupplierResource extends Resource
                     ->boolean(),
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
             ]);
     }
@@ -144,6 +147,7 @@ class SupplierResource extends Resource
         return [
             'index' => ListSuppliers::route('/'),
             'create' => CreateSupplier::route('/create'),
+            'view' => ViewSupplier::route('/{record}'),
             'edit' => EditSupplier::route('/{record}/edit'),
         ];
     }

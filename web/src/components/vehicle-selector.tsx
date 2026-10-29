@@ -3,7 +3,34 @@
 import type { CarMake, CarModel, CarModification } from "@avto/shared";
 import { useState } from "react";
 import { api } from "@/lib/api";
+import { authApi, handleUnauthorized, useSession } from "@/lib/auth";
 import { setSelectedCar, useSelectedCar } from "@/lib/car";
+
+/** Сохранить выбранную машину в «Мой гараж» (только для вошедших покупателей). */
+function SaveToGarage({ modificationId }: { modificationId: number }) {
+  const [state, setState] = useState<{ id: number; status: "saving" | "saved" | "error" } | null>(null);
+  // Сменили машину — кнопка снова активна.
+  const status = state?.id === modificationId ? state.status : null;
+
+  async function save() {
+    setState({ id: modificationId, status: "saving" });
+    try {
+      await authApi.garage.add({ car_modification_id: modificationId });
+      setState({ id: modificationId, status: "saved" });
+    } catch (e) {
+      handleUnauthorized(e);
+      setState({ id: modificationId, status: "error" });
+    }
+  }
+
+  if (status === "saved") return <span className="text-sm text-success">В гараже ✓</span>;
+
+  return (
+    <button type="button" className="btn-ghost" onClick={save} disabled={status === "saving"}>
+      {status === "error" ? "Не удалось, ещё раз" : "В гараж"}
+    </button>
+  );
+}
 
 /**
  * Марка → модель → модификация. Марки приходят с сервера (кэшируются),
@@ -13,6 +40,7 @@ import { setSelectedCar, useSelectedCar } from "@/lib/car";
 export function VehicleSelector({ makes, initialModels = [] }: { makes: CarMake[]; initialModels?: CarModel[] }) {
   const singleMake = makes.length === 1;
   const selected = useSelectedCar();
+  const session = useSession();
   const [models, setModels] = useState<CarModel[]>(initialModels);
   const [modifications, setModifications] = useState<CarModification[]>([]);
   const [makeId, setMakeId] = useState(singleMake ? String(makes[0].id) : "");
@@ -53,6 +81,7 @@ export function VehicleSelector({ makes, initialModels = [] }: { makes: CarMake[
           <div className="text-xs text-muted">Ваш автомобиль</div>
           <div className="font-semibold">{selected.title}</div>
         </div>
+        {session && <SaveToGarage modificationId={selected.id} />}
         <button type="button" className="btn-ghost" onClick={() => setSelectedCar(null)}>
           Сменить
         </button>

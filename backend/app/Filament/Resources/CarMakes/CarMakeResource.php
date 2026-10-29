@@ -7,6 +7,7 @@ use App\Models\CarMake;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -59,6 +60,7 @@ class CarMakeResource extends Resource
             ])
             ->defaultSort('name')
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make(),
             ]);

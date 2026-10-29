@@ -7,6 +7,7 @@ use App\Models\Category;
 use BackedEnum;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -80,6 +81,7 @@ class CategoryResource extends Resource
             ->defaultSort('sort')
             ->reorderable('sort')
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make(),
             ]);

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Support\Article;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\Scope;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -31,6 +33,20 @@ class Product extends Model
     protected static function booted(): void
     {
         static::saving(fn (Product $product) => $product->article_normalized = Article::normalize($product->article));
+    }
+
+    /** Товар активен и есть хотя бы у одного поставщика — только такие показываем в каталоге. */
+    #[Scope]
+    protected function available(Builder $query): void
+    {
+        $query->where('is_active', true)->whereHas('offers', fn ($q) => $q->where('quantity', '>', 0));
+    }
+
+    /** Подходит хотя бы к одной модификации модели. */
+    #[Scope]
+    protected function forCarModel(Builder $query, int $modelId): void
+    {
+        $query->whereHas('modifications', fn ($q) => $q->where('car_model_id', $modelId));
     }
 
     public function brand(): BelongsTo

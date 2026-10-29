@@ -19,7 +19,10 @@ COPY packages/shared packages/shared
 COPY web web
 # Публичный адрес API вшивается в клиентский бандл при сборке.
 ARG NEXT_PUBLIC_API_URL=/api/v1
+# Адрес сайта для canonical-ссылок и sitemap.xml.
+ARG NEXT_PUBLIC_SITE_URL=http://localhost:8080
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
     NEXT_OUTPUT=standalone
 RUN pnpm --filter web build
 

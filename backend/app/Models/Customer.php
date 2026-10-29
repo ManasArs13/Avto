@@ -27,4 +27,9 @@ class Customer extends Authenticatable
     {
         return $this->hasMany(Order::class)->latest();
     }
+
+    public function vehicles(): HasMany
+    {
+        return $this->hasMany(CustomerVehicle::class)->latest('id');
+    }
 }

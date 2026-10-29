@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\StaffRole;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -13,12 +14,16 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
 // Сотрудники магазина (доступ в админку). Покупатели — App\Models\Customer.
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'role', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    protected $attributes = [
+        'role' => 'viewer',
+    ];
 
     /**
      * Get the attributes that should be cast.
@@ -30,12 +35,13 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'role' => StaffRole::class,
         ];
     }
 
     public function canAccessPanel(Panel $panel): bool
     {
-        // TODO: роли (spatie/laravel-permission), когда появятся менеджеры с разными правами.
+        // Что именно можно делать внутри — решают политики (App\Policies) по роли.
         return true;
     }
 }

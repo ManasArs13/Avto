@@ -4,7 +4,8 @@ import { ApiError, formatPrice, type DeliveryMethod, type PaymentMethod } from "
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { api } from "@/lib/api";
+import { Field } from "@/components/field";
+import { authApi, useSession } from "@/lib/auth";
 import { cart, useCart } from "@/lib/cart";
 
 const DELIVERY: { value: DeliveryMethod; label: string; cost: number }[] = [
@@ -22,6 +23,8 @@ const PAYMENT: { value: PaymentMethod; label: string }[] = [
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, total } = useCart();
+  // Если покупатель вошёл, заказ привяжется к аккаунту (токен уходит в authApi), а контакты подставятся.
+  const customer = useSession()?.customer;
   const [delivery, setDelivery] = useState<DeliveryMethod>("pickup");
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState<string | null>(null);
@@ -47,7 +50,7 @@ export default function CheckoutPage() {
     const phone = String(form.get("contact_phone"));
 
     try {
-      const order = await api.orders.create({
+      const order = await authApi.orders.create({
         items: items.map((i) => ({ offer_id: i.offerId, quantity: i.quantity })),
         contact_name: String(form.get("contact_name")),
         contact_phone: phone,
@@ -78,11 +81,27 @@ export default function CheckoutPage() {
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">Оформление заказа</h1>
 
-        <fieldset className="card grid gap-3 p-5 sm:grid-cols-2">
+        {/* key: после гидратации сессия появляется — пересоздаём поля, чтобы подставились defaultValue. */}
+        <fieldset key={customer?.id ?? "guest"} className="card grid gap-3 p-5 sm:grid-cols-2">
           <legend className="sr-only">Контакты</legend>
-          <Field label="Имя" name="contact_name" errors={errors} required autoComplete="name" />
-          <Field label="Телефон" name="contact_phone" errors={errors} required type="tel" autoComplete="tel" />
-          <Field label="Email (для чека)" name="contact_email" errors={errors} type="email" autoComplete="email" />
+          <Field label="Имя" name="contact_name" errors={errors} required autoComplete="name" defaultValue={customer?.name} />
+          <Field
+            label="Телефон"
+            name="contact_phone"
+            errors={errors}
+            required
+            type="tel"
+            autoComplete="tel"
+            defaultValue={customer?.phone ?? undefined}
+          />
+          <Field
+            label="Email (для чека)"
+            name="contact_email"
+            errors={errors}
+            type="email"
+            autoComplete="email"
+            defaultValue={customer?.email}
+          />
         </fieldset>
 
         <fieldset className="card space-y-3 p-5">
@@ -152,21 +171,5 @@ export default function CheckoutPage() {
         </button>
       </aside>
     </form>
-  );
-}
-
-function Field({
-  label,
-  name,
-  errors,
-  ...props
-}: { label: string; name: string; errors: Record<string, string[]> } & React.InputHTMLAttributes<HTMLInputElement>) {
-  const error = errors[name]?.[0];
-  return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium">{label}</span>
-      <input name={name} className={`input ${error ? "border-red-500" : ""}`} {...props} />
-      {error && <span className="mt-1 block text-xs text-red-600">{error}</span>}
-    </label>
   );
 }

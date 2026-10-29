@@ -6,10 +6,10 @@ use App\Enums\OrderItemStatus;
 use App\Models\OrderItem;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
-use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Collection;
@@ -22,10 +22,10 @@ class ItemsRelationManager extends RelationManager
 
     protected static ?string $modelLabel = 'позиция';
 
-    // Позиции видны и на странице просмотра заказа.
+    // Статусы позиций можно менять и со страницы просмотра заказа — но не роли «Только просмотр».
     public function isReadOnly(): bool
     {
-        return false;
+        return ! Filament::auth()->user()?->role->canEdit();
     }
 
     public function form(Schema $schema): Schema
@@ -82,6 +82,7 @@ class ItemsRelationManager extends RelationManager
                 BulkAction::make('markOrdered')
                     ->label('Отметить как заказанные')
                     ->icon('heroicon-o-truck')
+                    ->hidden(fn () => $this->isReadOnly())
                     ->action(fn (Collection $records) => $records->each->update(['status' => OrderItemStatus::Ordered])),
             ]);
     }

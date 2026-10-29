@@ -3,13 +3,14 @@
 namespace App\Http\Resources;
 
 use App\Enums\SupplierType;
+use App\Models\Offer;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * Поставщика покупателю не раскрываем: только цена, наличие и срок.
  *
- * @mixin \App\Models\Offer
+ * @mixin Offer
  */
 class OfferResource extends JsonResource
 {

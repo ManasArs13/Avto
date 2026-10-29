@@ -5,10 +5,12 @@ namespace App\Filament\Resources\CarModels;
 use App\Filament\Resources\CarModels\Pages\CreateCarModel;
 use App\Filament\Resources\CarModels\Pages\EditCarModel;
 use App\Filament\Resources\CarModels\Pages\ListCarModels;
+use App\Filament\Resources\CarModels\Pages\ViewCarModel;
 use App\Filament\Resources\CarModels\RelationManagers\ModificationsRelationManager;
 use App\Models\CarModel;
 use BackedEnum;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
@@ -82,6 +84,7 @@ class CarModelResource extends Resource
                     ->relationship('make', 'name'),
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
             ]);
     }
@@ -98,6 +101,7 @@ class CarModelResource extends Resource
         return [
             'index' => ListCarModels::route('/'),
             'create' => CreateCarModel::route('/create'),
+            'view' => ViewCarModel::route('/{record}'),
             'edit' => EditCarModel::route('/{record}/edit'),
         ];
     }

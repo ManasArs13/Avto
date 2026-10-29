@@ -1,5 +1,7 @@
 <?php
 
+use App\Models\Product;
+
 return [
 
     /*
@@ -140,7 +142,7 @@ return [
         'host' => env('MEILISEARCH_HOST', 'http://localhost:7700'),
         'key' => env('MEILISEARCH_KEY'),
         'index-settings' => [
-            App\Models\Product::class => [
+            Product::class => [
                 'searchableAttributes' => ['article_normalized', 'article', 'name', 'brand', 'category'],
                 'filterableAttributes' => ['is_active', 'brand'],
             ],

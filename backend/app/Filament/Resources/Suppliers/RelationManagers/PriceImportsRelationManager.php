@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Suppliers\RelationManagers;
 
 use App\Enums\ImportStatus;
+use App\Filament\Concerns\ReadOnlyForViewers;
 use App\Jobs\ImportPriceFile;
 use App\Models\PriceImport;
 use Filament\Actions\Action;
@@ -14,6 +15,8 @@ use Filament\Tables\Table;
 
 class PriceImportsRelationManager extends RelationManager
 {
+    use ReadOnlyForViewers;
+
     protected static string $relationship = 'priceImports';
 
     protected static ?string $title = 'Загрузки прайсов';
@@ -64,6 +67,7 @@ class PriceImportsRelationManager extends RelationManager
                 Action::make('upload')
                     ->label('Загрузить прайс')
                     ->icon('heroicon-o-arrow-up-tray')
+                    ->hidden(fn () => $this->isReadOnly())
                     ->schema([
                         FileUpload::make('file')
                             ->label('CSV-файл')

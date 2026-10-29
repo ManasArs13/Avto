@@ -1,12 +1,13 @@
 # Avto — интернет-магазин автозапчастей
 
-Монорепозиторий: API и админка на Laravel, витрина на Next.js, общий TypeScript-пакет для будущего мобильного приложения.
+Монорепозиторий: API и админка на Laravel, витрина на Next.js, общий TypeScript-пакет и мобильное приложение на Expo.
 
 ```
 backend/                 Laravel 13 + Filament 5 — REST API (/api/v1) и админка (/admin)
 web/                     Next.js 16 (App Router, Cache Components) — витрина
 packages/shared/         @avto/shared — типы API, клиент, форматирование (для web и mobile)
-mobile/                  (будет) Expo / React Native — подключит @avto/shared
+mobile/                  Expo / React Native — приложение на том же API (см. mobile/README.md)
+.github/workflows/       CI: тесты, типы, линтер, сборка Docker-образов
 docker-compose.yml       локальная разработка: PostgreSQL, Redis, Meilisearch
 docker-compose.prod.yml  полный стек в контейнерах (nginx, PHP-FPM, очередь, Next.js, БД)
 docker/                  Dockerfile-ы и конфиги nginx / PHP
@@ -82,7 +83,10 @@ pnpm docker:artisan db:seed --force
 
 ```bash
 pnpm docker:artisan make:filament-user
+pnpm docker:artisan staff:role you@example.com admin
 ```
+
+Новый пользователь получает роль «Только просмотр» — первого администратора назначьте командой `staff:role`, дальше роли раздаются в админке (Настройки → Сотрудники).
 
 Сайт — http://localhost:8080, админка — http://localhost:8080/admin. Логи: `pnpm docker:logs`, остановка: `pnpm docker:down`.
 
@@ -93,6 +97,7 @@ pnpm docker:artisan make:filament-user
 | `avto-web` (`docker/web/Dockerfile`) | Next.js standalone-сервер на Node 22 |
 
 Заметки для продакшена:
+- `APP_URL` вшивается в образ `web` при сборке (canonical-ссылки, sitemap.xml) — после смены домена пересоберите его: `pnpm docker:up`.
 - HTTPS — внешним прокси (Caddy / Traefik / балансировщик облака) перед nginx; Laravel доверяет заголовкам `X-Forwarded-*`. Укажите `APP_URL=https://…`.
 - Тома: `storage` (загруженные прайсы), `pgdata`, `redisdata`, `meilidata` — их и бэкапить.
 - Кэш конфигурации и маршрутов собирается при старте контейнера, поэтому после правки `.env.docker` достаточно перезапуска.
@@ -120,6 +125,28 @@ pnpm docker:artisan make:filament-user
 - Гость может оформить заказ и посмотреть его по номеру + телефону; покупатель с аккаунтом — через Bearer-токен (Sanctum). Тот же механизм подойдёт мобильному приложению.
 - В позициях заказа сохраняется снимок (бренд, артикул, цена закупки/продажи) — маржа видна в админке.
 
+### Админка: роли сотрудников
+| Роль | Что может |
+|---|---|
+| Администратор | всё, включая раздел «Сотрудники» |
+| Менеджер | заказы, каталог, прайсы, наценки; сотрудников не видит |
+| Только просмотр | видит все разделы и карточки, ничего не меняет |
+
+Права проверяются политиками (`App\Policies\StaffPolicy`, `UserPolicy`), а не только скрытием кнопок: прямой URL на редактирование вернёт 403. Роль меняется в админке или командой `php artisan staff:role email роль`.
+
+### SEO
+- Страницы моделей `/cars/lada/vesta` («Запчасти LADA Vesta») и пар «модель × категория» `/cars/lada/granta/brake-pads` («Тормозные колодки LADA Granta»). Страница пары есть, только если для модели в категории есть товар в наличии.
+- У каждой страницы — title, description, canonical и хлебные крошки с разметкой `BreadcrumbList`; у товара — разметка `Product` с ценой и наличием и ссылки «Подходит для» на модели.
+- `/sitemap.xml` — индекс: страницы каталога в `/sitemaps/pages.xml`, товары — по 40 000 в `/sitemaps/products-N.xml`. `robots.txt` закрывает корзину, кабинет и поиск.
+
+### Личный кабинет
+- `/account`: вход и регистрация, история заказов, профиль и смена пароля, «Мой гараж».
+- Машину в гараж добавляют кнопкой «В гараж» в подборе по авто; из гаража — «Подобрать запчасти» в один клик. Гараж общий для сайта и приложения.
+- Токен покупателя хранится в `localStorage`, при оформлении заказ привязывается к аккаунту, контакты подставляются.
+
+### CI
+GitHub Actions (`.github/workflows/ci.yml`) на каждый push и pull request: Pint и тесты Laravel, типы всех пакетов, ESLint и сборка сайта. Из `main` образы `avto-php`, `avto-nginx`, `avto-web` публикуются в GitHub Container Registry (`ghcr.io/<владелец>/avto-*`). Адрес сайта для образа `web` берётся из переменной репозитория `SITE_URL`.
+
 ## API v1
 
 | Метод | Путь | |
@@ -127,10 +154,13 @@ pnpm docker:artisan make:filament-user
 | GET | `/brands`, `/categories` | справочники |
 | GET | `/search?q=` | поиск по артикулу/названию |
 | GET | `/products/{id}` | товар + предложения + аналоги |
-| GET | `/categories/{slug}/products?modification=&page=` | товары категории (с фильтром по авто) |
+| GET | `/categories/{slug}/products?modification=&model=&page=` | товары категории (с фильтром по двигателю или модели) |
+| GET | `/vehicles/makes/{make}/models/{model}` (slug) | страница модели: двигатели и категории с числом товаров |
+| GET | `/sitemap`, `/sitemap/products/{page}` | данные для sitemap.xml |
 | GET | `/vehicles/makes`, `/vehicles/makes/{id}/models`, `/vehicles/models/{id}/modifications`, `/vehicles/modifications/{id}` | подбор по авто |
 | POST | `/auth/register`, `/auth/login` | токен покупателя |
-| GET/POST | `/auth/me`, `/auth/logout` | 🔒 |
+| GET/PATCH/POST | `/auth/me`, `/auth/logout` | 🔒 профиль, смена пароля, выход |
+| GET/POST/DELETE | `/garage`, `/garage/{id}` | 🔒 мой гараж |
 | POST | `/orders` | оформление (гость или 🔒) |
 | GET | `/orders` | 🔒 мои заказы |
 | GET | `/orders/{number}?phone=` | заказ по номеру |
@@ -139,12 +169,15 @@ pnpm docker:artisan make:filament-user
 
 ## Что дальше
 
-- [ ] Мобильное приложение: `pnpm create expo-app mobile`, подключить `@avto/shared`, токен — в SecureStore
-- [ ] Личный кабинет на сайте (логин, история заказов, «мой гараж»)
+- [x] SEO-страницы моделей и категорий, sitemap, разметка schema.org
+- [x] Личный кабинет: заказы, профиль, «мой гараж»
+- [x] Роли в админке: администратор, менеджер, только просмотр
+- [x] Каркас мобильного приложения (Expo) — дальнейшие шаги в `mobile/README.md`
+- [x] CI на GitHub Actions + образы в GHCR
 - [ ] Оплата: ЮKassa / CloudPayments (вебхук → `payment_status`), чеки 54-ФЗ
 - [ ] Доставка: расчёт через API СДЭК вместо фиксированных тарифов в `OrderService`
 - [ ] Подключение каталогов TecDoc / Laximo (поиск по VIN, реальные кроссы и применимость)
 - [ ] Онлайн-опрос API поставщиков (тип «API поставщика»): `Http::pool()` + кэш в Redis
-- [ ] Роли в админке (spatie/laravel-permission), русские сообщения валидации (laravel-lang)
+- [ ] Русские сообщения валидации (laravel-lang), восстановление пароля покупателя по email
 - [ ] Обмен с 1С (CommerceML), уведомления о заказе (email / Telegram)
 - [ ] Тесты: импорт прайсов и заказы (поиск и нормализация уже покрыты — `php artisan test`), Playwright для оформления заказа

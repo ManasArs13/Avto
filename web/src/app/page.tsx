@@ -1,9 +1,11 @@
+import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { CategoryLinks } from "@/components/category-links";
 import { SearchForm } from "@/components/search-form";
 import { VehicleSelector } from "@/components/vehicle-selector";
 import { getCarMakes, getCarModels, getCategories } from "@/lib/data";
+import { carPath } from "@/lib/site";
 
 export default function Home() {
   return (
@@ -48,6 +50,19 @@ async function CatalogSections() {
       <section className="card p-5">
         <h2 className="mb-3 text-lg font-bold">Подбор по автомобилю</h2>
         <VehicleSelector makes={makes} initialModels={models} />
+        {models.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2 text-sm">
+            {models.map((m) => (
+              <Link
+                key={m.id}
+                href={carPath(makes[0].slug, m.slug)}
+                className="rounded-lg border border-border px-3 py-1.5 hover:border-accent hover:text-accent"
+              >
+                {makes[0].name} {m.name}
+              </Link>
+            ))}
+          </div>
+        )}
       </section>
 
       <section>

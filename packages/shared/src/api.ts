@@ -2,15 +2,18 @@ import type {
   Brand,
   CarMake,
   CarModel,
+  CarModelPage,
   CarModification,
   CarModificationDetails,
   Category,
   CreateOrderPayload,
   Customer,
+  GarageVehicle,
   Order,
   Paginated,
   Product,
   ProductDetails,
+  SitemapData,
 } from "./types";
 
 export class ApiError extends Error {
@@ -62,7 +65,7 @@ export function createApiClient({ baseUrl, getToken }: ApiClientOptions) {
     catalog: {
       brands: () => get<Brand[]>("/brands"),
       categories: () => get<Category[]>("/categories"),
-      categoryProducts: (slug: string, params: { modification?: number; page?: number } = {}) =>
+      categoryProducts: (slug: string, params: { modification?: number; model?: number; page?: number } = {}) =>
         request<Paginated<Product>>(`/categories/${encodeURIComponent(slug)}/products${query(params)}`),
       search: (q: string) => get<Product[]>(`/search${query({ q })}`),
       product: (id: number) => get<ProductDetails>(`/products/${id}`),
@@ -72,6 +75,14 @@ export function createApiClient({ baseUrl, getToken }: ApiClientOptions) {
       models: (makeId: number) => get<CarModel[]>(`/vehicles/makes/${makeId}/models`),
       modifications: (modelId: number) => get<CarModification[]>(`/vehicles/models/${modelId}/modifications`),
       modification: (id: number) => get<CarModificationDetails>(`/vehicles/modifications/${id}`),
+      /** По slug: /vehicles/makes/lada/models/vesta */
+      modelPage: (make: string, model: string) =>
+        get<CarModelPage>(`/vehicles/makes/${encodeURIComponent(make)}/models/${encodeURIComponent(model)}`),
+    },
+    sitemap: {
+      index: () => get<SitemapData>("/sitemap"),
+      /** [id, дата изменения] товаров в наличии. */
+      products: (page: number) => get<[number, string][]>(`/sitemap/products/${page}`),
     },
     auth: {
       register: (data: { name: string; email: string; password: string; phone?: string; device_name?: string }) =>
@@ -80,6 +91,14 @@ export function createApiClient({ baseUrl, getToken }: ApiClientOptions) {
         post<{ token: string; customer: Customer }>("/auth/login", data),
       logout: () => request<{ message: string }>("/auth/logout", { method: "POST" }),
       me: () => get<Customer>("/auth/me"),
+      update: (data: { name?: string; phone?: string | null; current_password?: string; password?: string }) =>
+        request<{ data: Customer }>("/auth/me", { method: "PATCH", body: JSON.stringify(data) }).then((r) => r.data),
+    },
+    garage: {
+      list: () => get<GarageVehicle[]>("/garage"),
+      /** Повторное добавление той же модификации обновляет подпись и VIN. */
+      add: (data: { car_modification_id: number; name?: string; vin?: string }) => post<GarageVehicle>("/garage", data),
+      remove: (id: number) => request<{ message: string }>(`/garage/${id}`, { method: "DELETE" }),
     },
     orders: {
       create: (payload: CreateOrderPayload) => post<Order>("/orders", payload),

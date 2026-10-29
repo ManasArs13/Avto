@@ -60,6 +60,26 @@ class AuthController extends Controller
         return response()->json(['data' => $this->customerData($request->user())]);
     }
 
+    /** PATCH /auth/me — имя, телефон и (с текущим паролем) новый пароль. */
+    public function update(Request $request): JsonResponse
+    {
+        $customer = $request->user();
+        $data = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:32'],
+            'current_password' => ['required_with:password', 'string'],
+            'password' => ['sometimes', Password::min(8)],
+        ]);
+
+        if (isset($data['password']) && ! Hash::check($data['current_password'], $customer->password)) {
+            throw ValidationException::withMessages(['current_password' => 'Неверный текущий пароль.']);
+        }
+
+        $customer->update(collect($data)->except('current_password')->all());
+
+        return response()->json(['data' => $this->customerData($customer)]);
+    }
+
     private function tokenResponse(Customer $customer, string $device, int $status = 200): JsonResponse
     {
         return response()->json([

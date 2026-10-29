@@ -70,6 +70,8 @@ services:
       dockerfile: docker/web/Dockerfile
       args:
         NEXT_PUBLIC_API_URL: /api/v1
+        # Тот же адрес, что APP_URL. После смены домена образ web нужно пересобрать.
+        NEXT_PUBLIC_SITE_URL: ${APP_URL:-http://localhost:8080}
     image: avto-web:latest
     restart: unless-stopped
     environment:

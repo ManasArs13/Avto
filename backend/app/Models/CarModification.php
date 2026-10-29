@@ -22,4 +22,10 @@ class CarModification extends Model
     {
         return $this->belongsToMany(Product::class);
     }
+
+    /** «LADA Vesta 1.6 16V (106 л.с.)» — нужна загруженная связь model.make. */
+    public function title(): string
+    {
+        return "{$this->model->make->name} {$this->model->name} {$this->name}";
+    }
 }

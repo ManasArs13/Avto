@@ -1,8 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import Link from "next/link";
+import { AccountLink } from "@/components/account-link";
 import { CartLink } from "@/components/cart-link";
 import { Logo } from "@/components/logo";
 import { SearchForm } from "@/components/search-form";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const inter = Inter({
@@ -11,6 +14,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Avto — оригинальные запчасти ВАЗ (LADA)",
     template: "%s — Avto",
@@ -37,6 +41,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <div className="min-w-0 flex-1">
               <SearchForm />
             </div>
+            <Link href="/cars" className="hidden text-sm font-medium text-muted hover:text-accent sm:block">
+              Модели
+            </Link>
+            <AccountLink />
             <CartLink />
           </div>
         </header>

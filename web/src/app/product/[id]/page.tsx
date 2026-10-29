@@ -2,8 +2,10 @@ import { formatPrice } from "@avto/shared";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { Breadcrumbs, JsonLd } from "@/components/breadcrumbs";
 import { OffersTable } from "@/components/offers-table";
 import { getProduct } from "@/lib/data";
+import { carPath, SITE_URL } from "@/lib/site";
 
 export async function generateMetadata(props: PageProps<"/product/[id]">) {
   const { id } = await props.params;
@@ -13,6 +15,7 @@ export async function generateMetadata(props: PageProps<"/product/[id]">) {
   return {
     title: `${product.brand?.name} ${product.article} — ${product.name}`,
     description: `${product.name} ${product.brand?.name} ${product.article}: цена, наличие и аналоги.`,
+    alternates: { canonical: `/product/${product.id}` },
   };
 }
 
@@ -29,24 +32,42 @@ async function ProductDetails({ params }: Pick<PageProps<"/product/[id]">, "para
   const data = Number.isInteger(Number(id)) ? await getProduct(Number(id)) : null;
   if (!data) notFound();
 
-  const { product, analogs } = data;
+  const { product, analogs, fits } = data;
   const specs = Object.entries(product.specs ?? {});
+  const prices = product.offers.map((o) => o.price);
+  // Карточка товара в выдаче поисковиков: цена «от … до …» и наличие.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: `${product.name} ${product.brand?.name ?? ""} ${product.article}`.trim(),
+    sku: product.article,
+    mpn: product.article,
+    ...(product.brand ? { brand: { "@type": "Brand", name: product.brand.name } } : {}),
+    ...(product.category ? { category: product.category.name } : {}),
+    ...(prices.length
+      ? {
+          offers: {
+            "@type": "AggregateOffer",
+            priceCurrency: "RUB",
+            lowPrice: Math.min(...prices),
+            highPrice: Math.max(...prices),
+            offerCount: prices.length,
+            availability: "https://schema.org/InStock",
+            url: `${SITE_URL}/product/${product.id}`,
+          },
+        }
+      : {}),
+  };
 
   return (
     <div className="space-y-8">
-      <nav className="text-sm text-muted">
-        <Link href="/" className="hover:text-accent">
-          Главная
-        </Link>
-        {product.category && (
-          <>
-            {" / "}
-            <Link href={`/catalog/${product.category.slug}`} className="hover:text-accent">
-              {product.category.name}
-            </Link>
-          </>
-        )}
-      </nav>
+      <Breadcrumbs
+        items={[
+          ...(product.category ? [{ name: product.category.name, href: `/catalog/${product.category.slug}` }] : []),
+          { name: product.article },
+        ]}
+      />
+      <JsonLd data={jsonLd} />
 
       <section className="card overflow-hidden">
         <div className="border-b border-border p-5">
@@ -61,6 +82,20 @@ async function ProductDetails({ params }: Pick<PageProps<"/product/[id]">, "para
           </h1>
           <p className="mt-1 text-muted">{product.name}</p>
           {product.description && <p className="mt-3 max-w-3xl text-sm">{product.description}</p>}
+          {fits.length > 0 && (
+            <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+              <span className="text-muted">Подходит для:</span>
+              {fits.map((f) => (
+                <Link
+                  key={`${f.make.slug}/${f.model.slug}`}
+                  href={carPath(f.make.slug, f.model.slug)}
+                  className="rounded-lg border border-border px-2.5 py-1 hover:border-accent hover:text-accent"
+                >
+                  {f.make.name} {f.model.name}
+                </Link>
+              ))}
+            </div>
+          )}
           {specs.length > 0 && (
             <dl className="mt-4 grid max-w-xl grid-cols-2 gap-x-6 gap-y-1 text-sm">
               {specs.map(([k, v]) => (

@@ -30,6 +30,32 @@ export async function getCarModification(id: number) {
   return orNull(api.vehicles.modification(id));
 }
 
+export async function getCarModelPage(make: string, model: string) {
+  "use cache";
+  cacheLife("hours");
+  return orNull(api.vehicles.modelPage(make, model));
+}
+
+/** Все модели всех марок — для страницы /cars и перелинковки. */
+export async function getAllCarModels() {
+  "use cache";
+  cacheLife("hours");
+  const makes = await api.vehicles.makes();
+  return Promise.all(makes.map(async (make) => ({ make, models: await api.vehicles.models(make.id) })));
+}
+
+export async function getSitemapData() {
+  "use cache";
+  cacheLife("hours");
+  return api.sitemap.index();
+}
+
+export async function getSitemapProducts(page: number) {
+  "use cache";
+  cacheLife("hours");
+  return api.sitemap.products(page);
+}
+
 export async function searchProducts(q: string) {
   "use cache";
   cacheLife("minutes");
@@ -43,10 +69,10 @@ export async function getProduct(id: number) {
   return orNull(api.catalog.product(id));
 }
 
-export async function getCategoryProducts(slug: string, modification?: number, page?: number) {
+export async function getCategoryProducts(slug: string, modification?: number, page?: number, model?: number) {
   "use cache";
   cacheLife("minutes");
-  return orNull(api.catalog.categoryProducts(slug, { modification, page }));
+  return orNull(api.catalog.categoryProducts(slug, { modification, model, page }));
 }
 
 /** 404 от API превращаем в null, чтобы страница показала notFound(). */

@@ -7,6 +7,7 @@ use App\Http\Resources\BrandResource;
 use App\Http\Resources\CategoryResource;
 use App\Http\Resources\ProductResource;
 use App\Models\Brand;
+use App\Models\CarModel;
 use App\Models\Category;
 use App\Models\Product;
 use App\Services\CatalogSearch;
@@ -55,26 +56,38 @@ class CatalogController extends Controller
         ['product' => $product, 'offers' => $offers, 'analogs' => $analogs] = $this->search->offersFor($product);
         $product->setRelation('offers', $offers);
 
+        // Модели, к которым подходит деталь: ссылки на SEO-страницы «Запчасти LADA Vesta».
+        $fits = CarModel::query()
+            ->whereHas('modifications.products', fn ($q) => $q->whereKey($product->id))
+            ->with('make:id,name,slug')
+            ->orderBy('name')
+            ->get()
+            ->map(fn (CarModel $model) => [
+                'make' => $model->make->only('name', 'slug'),
+                'model' => $model->only('name', 'slug'),
+            ]);
+
         return response()->json([
             'data' => [
                 'product' => new ProductResource($product),
                 'analogs' => ProductResource::collection($analogs),
+                'fits' => $fits,
             ],
         ]);
     }
 
     /**
-     * GET /categories/{slug}/products?modification=ID — товары категории, опционально для конкретного авто.
+     * GET /categories/{slug}/products?modification=ID|model=ID — товары категории, опционально для конкретного авто или модели.
      */
     public function categoryProducts(Request $request, Category $category): AnonymousResourceCollection
     {
         $categoryIds = $category->children()->pluck('id')->push($category->id);
 
         $products = Product::query()
-            ->where('is_active', true)
+            ->available()
             ->whereIn('category_id', $categoryIds)
             ->when($request->integer('modification'), fn ($q, $id) => $q->whereHas('modifications', fn ($q) => $q->whereKey($id)))
-            ->whereHas('offers', fn ($q) => $q->where('quantity', '>', 0))
+            ->when($request->integer('model'), fn ($q, $id) => $q->forCarModel($id))
             ->with('brand')
             ->orderBy('name')
             ->paginate(30);

@@ -5,9 +5,11 @@ namespace App\Filament\Resources\Brands;
 use App\Filament\Resources\Brands\Pages\CreateBrand;
 use App\Filament\Resources\Brands\Pages\EditBrand;
 use App\Filament\Resources\Brands\Pages\ListBrands;
+use App\Filament\Resources\Brands\Pages\ViewBrand;
 use App\Models\Brand;
 use BackedEnum;
 use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -94,6 +96,7 @@ class BrandResource extends Resource
                 TernaryFilter::make('is_oem')->label('Оригинал'),
             ])
             ->recordActions([
+                ViewAction::make(),
                 EditAction::make(),
             ]);
     }
@@ -103,6 +106,7 @@ class BrandResource extends Resource
         return [
             'index' => ListBrands::route('/'),
             'create' => CreateBrand::route('/create'),
+            'view' => ViewBrand::route('/{record}'),
             'edit' => EditBrand::route('/{record}/edit'),
         ];
     }

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\RelationManagers;
 
+use App\Filament\Concerns\ReadOnlyForViewers;
 use App\Models\Offer;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -15,6 +16,8 @@ use Filament\Tables\Table;
 
 class OffersRelationManager extends RelationManager
 {
+    use ReadOnlyForViewers;
+
     protected static string $relationship = 'offers';
 
     protected static ?string $title = 'Предложения поставщиков';

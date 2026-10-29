@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\RelationManagers;
 
+use App\Filament\Concerns\ReadOnlyForViewers;
 use App\Filament\Resources\Products\ProductResource;
 use App\Models\Product;
 use Filament\Actions\Action;
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class AnalogsRelationManager extends RelationManager
 {
+    use ReadOnlyForViewers;
+
     protected static string $relationship = 'analogs';
 
     protected static ?string $title = 'Аналоги (кроссы)';
