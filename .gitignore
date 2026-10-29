@@ -4,3 +4,4 @@ tools/composer.phar
 Thumbs.db
 .idea/
 .vscode/
+.env.docker

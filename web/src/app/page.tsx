@@ -1,11 +1,11 @@
+import { connection } from "next/server";
+import { Suspense } from "react";
 import { CategoryLinks } from "@/components/category-links";
 import { SearchForm } from "@/components/search-form";
 import { VehicleSelector } from "@/components/vehicle-selector";
 import { getCarMakes, getCategories } from "@/lib/data";
 
-export default async function Home() {
-  const [categories, makes] = await Promise.all([getCategories(), getCarMakes()]);
-
+export default function Home() {
   return (
     <div className="space-y-10">
       <section className="card px-5 py-8 sm:px-10 sm:py-12">
@@ -28,6 +28,21 @@ export default async function Home() {
         </div>
       </section>
 
+      <Suspense fallback={<CatalogSkeleton />}>
+        <CatalogSections />
+      </Suspense>
+    </div>
+  );
+}
+
+async function CatalogSections() {
+  // Данные из API берём при запросе, а не при сборке: образ собирается без работающего бэкенда.
+  // Ответы всё равно кэшируются (use cache в lib/data.ts).
+  await connection();
+  const [categories, makes] = await Promise.all([getCategories(), getCarMakes()]);
+
+  return (
+    <>
       <section className="card p-5">
         <h2 className="mb-3 text-lg font-bold">Подбор по автомобилю</h2>
         <VehicleSelector makes={makes} />
@@ -37,6 +52,19 @@ export default async function Home() {
         <h2 className="mb-4 text-lg font-bold">Каталог</h2>
         <CategoryLinks categories={categories} />
       </section>
+    </>
+  );
+}
+
+function CatalogSkeleton() {
+  return (
+    <div className="space-y-10">
+      <div className="card h-28 animate-pulse" />
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="card h-32 animate-pulse" />
+        ))}
+      </div>
     </div>
   );
 }

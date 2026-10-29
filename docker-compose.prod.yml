@@ -1,0 +1,114 @@
+# Полный стек в контейнерах: nginx + PHP-FPM + очередь + планировщик + Next.js + БД.
+#
+#   cp .env.docker.example .env.docker   # заполнить APP_KEY и пароли
+#   docker compose --env-file .env.docker -f docker-compose.prod.yml up -d --build
+#
+# Для локальной разработки — docker-compose.yml (только БД/Redis/Meilisearch).
+
+name: avto-prod
+
+x-php: &php
+  build:
+    context: .
+    dockerfile: docker/php/Dockerfile
+    target: app
+  image: avto-php:latest
+  env_file: .env.docker
+  restart: unless-stopped
+  volumes:
+    # Загруженные прайсы и прочие файлы: общие для app и очереди.
+    - storage:/var/www/html/storage/app
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_started
+    meilisearch:
+      condition: service_started
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: nginx
+    image: avto-nginx:latest
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+    depends_on:
+      - app
+      - web
+
+  app:
+    <<: *php
+    environment:
+      RUN_MIGRATIONS: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "php -r 'exit(@fsockopen(\"127.0.0.1\", 9000) ? 0 : 1);'"]
+      interval: 10s
+      start_period: 30s
+      retries: 5
+
+  queue:
+    <<: *php
+    command: ["php", "artisan", "queue:work", "--tries=1", "--timeout=3600", "--max-time=3600"]
+    depends_on:
+      app:
+        condition: service_healthy
+
+  scheduler:
+    <<: *php
+    command: ["php", "artisan", "schedule:work"]
+    depends_on:
+      app:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: /api/v1
+    image: avto-web:latest
+    restart: unless-stopped
+    environment:
+      # Серверные запросы Next.js идут через nginx внутри сети Docker.
+      API_INTERNAL_URL: http://nginx/api/v1
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-avto}
+      POSTGRES_USER: ${DB_USERNAME:-avto}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD не задан в .env.docker}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.12
+    restart: unless-stopped
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILISEARCH_KEY:?MEILISEARCH_KEY не задан в .env.docker}
+      MEILI_NO_ANALYTICS: "true"
+    volumes:
+      - meilidata:/meili_data
+
+volumes:
+  storage:
+  pgdata:
+  redisdata:
+  meilidata:

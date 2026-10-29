@@ -15,7 +15,8 @@ Route::prefix('v1')->group(function () {
     Route::get('brands', [CatalogController::class, 'brands']);
     Route::get('categories', [CatalogController::class, 'categories']);
     Route::get('categories/{category:slug}/products', [CatalogController::class, 'categoryProducts']);
-    Route::get('search', [CatalogController::class, 'search'])->middleware('throttle:60,1');
+    // Без throttle: поиск рендерит сервер Next.js, и все покупатели пришли бы с одного IP.
+    Route::get('search', [CatalogController::class, 'search']);
     Route::get('products/{product}', [CatalogController::class, 'product']);
 
     // Подбор по авто

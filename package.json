@@ -6,6 +6,10 @@
     "dev:web": "pnpm --filter web dev",
     "build:web": "pnpm --filter web build",
     "lint": "pnpm -r lint",
-    "typecheck": "pnpm -r typecheck"
+    "typecheck": "pnpm -r typecheck",
+    "docker:up": "docker compose --env-file .env.docker -f docker-compose.prod.yml up -d --build",
+    "docker:down": "docker compose --env-file .env.docker -f docker-compose.prod.yml down",
+    "docker:logs": "docker compose --env-file .env.docker -f docker-compose.prod.yml logs -f --tail=100",
+    "docker:artisan": "docker compose --env-file .env.docker -f docker-compose.prod.yml exec app php artisan"
   }
 }

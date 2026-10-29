@@ -3,11 +3,13 @@
 Монорепозиторий: API и админка на Laravel, витрина на Next.js, общий TypeScript-пакет для будущего мобильного приложения.
 
 ```
-backend/            Laravel 13 + Filament 5 — REST API (/api/v1) и админка (/admin)
-web/                Next.js 16 (App Router, Cache Components) — витрина
-packages/shared/    @avto/shared — типы API, клиент, форматирование (для web и mobile)
-mobile/             (будет) Expo / React Native — подключит @avto/shared
-docker-compose.yml  PostgreSQL 17, Redis 7, Meilisearch
+backend/                 Laravel 13 + Filament 5 — REST API (/api/v1) и админка (/admin)
+web/                     Next.js 16 (App Router, Cache Components) — витрина
+packages/shared/         @avto/shared — типы API, клиент, форматирование (для web и mobile)
+mobile/                  (будет) Expo / React Native — подключит @avto/shared
+docker-compose.yml       локальная разработка: PostgreSQL, Redis, Meilisearch
+docker-compose.prod.yml  полный стек в контейнерах (nginx, PHP-FPM, очередь, Next.js, БД)
+docker/                  Dockerfile-ы и конфиги nginx / PHP
 ```
 
 ## Запуск локально
@@ -46,6 +48,55 @@ pnpm install && pnpm dev:web
 `composer dev` поднимает сервер, **воркер очереди** (нужен для импорта прайсов и индексации поиска) и логи. Витрина при сборке (`next build`) обращается к API, поэтому бэкенд должен быть запущен.
 
 Если Composer не установлен глобально: `php tools/composer.phar …` (скачивается с getcomposer.org, в git не хранится).
+
+## Запуск в Docker (продакшен)
+
+Весь стек в контейнерах — `docker-compose.prod.yml`:
+
+```
+            :8080
+              │
+           nginx ──── /api, /admin, Livewire, ассеты Filament ──► app (PHP-FPM)
+              │                                                   queue (очередь: прайсы, индексация)
+              └─────── всё остальное ──► web (Next.js)            scheduler (cron Laravel)
+                                                                  postgres · redis · meilisearch
+```
+
+Сайт и API на одном домене, поэтому CORS не нужен. Next.js на сервере ходит в API по внутренней сети (`http://nginx/api/v1`), браузер — по относительному `/api/v1`.
+
+```bash
+cp .env.docker.example .env.docker
+```
+
+Заполните в `.env.docker` пароли и `APP_KEY` (сгенерировать: `php -r "echo 'base64:'.base64_encode(random_bytes(32));"`), затем:
+
+```bash
+pnpm docker:up
+```
+
+Первый запуск: миграции выполнятся сами (контейнер `app`, `RUN_MIGRATIONS=true`). Демо-данные и пользователь админки:
+
+```bash
+pnpm docker:artisan db:seed --force
+```
+
+```bash
+pnpm docker:artisan make:filament-user
+```
+
+Сайт — http://localhost:8080, админка — http://localhost:8080/admin. Логи: `pnpm docker:logs`, остановка: `pnpm docker:down`.
+
+| Образ | Что внутри |
+|---|---|
+| `avto-php` (`docker/php/Dockerfile`, target `app`) | PHP 8.4-FPM Alpine, pdo_pgsql, intl, redis, gd, opcache; composer без dev-зависимостей; запускается от `www-data` |
+| `avto-nginx` (target `nginx`) | nginx + статика Laravel/Filament из того же сборочного этапа |
+| `avto-web` (`docker/web/Dockerfile`) | Next.js standalone-сервер на Node 22 |
+
+Заметки для продакшена:
+- HTTPS — внешним прокси (Caddy / Traefik / балансировщик облака) перед nginx; Laravel доверяет заголовкам `X-Forwarded-*`. Укажите `APP_URL=https://…`.
+- Тома: `storage` (загруженные прайсы), `pgdata`, `redisdata`, `meilidata` — их и бэкапить.
+- Кэш конфигурации и маршрутов собирается при старте контейнера, поэтому после правки `.env.docker` достаточно перезапуска.
+- Livewire по умолчанию принимает загрузки до 12 МБ — для больших прайсов поднимите `temporary_file_upload.rules` в `config/livewire.php`.
 
 ## Как устроено
 
