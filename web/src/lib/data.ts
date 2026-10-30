@@ -56,6 +56,21 @@ export async function getSitemapProducts(page: number) {
   return api.sitemap.products(page);
 }
 
+/** Реквизиты продавца и список документов — подвал сайта, страницы документов. */
+export async function getShopInfo() {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("shop");
+  return api.legal.shop();
+}
+
+export async function getLegalDocument(slug: string) {
+  "use cache";
+  cacheLife("hours");
+  cacheTag("shop");
+  return orNull(api.legal.document(slug));
+}
+
 export async function searchProducts(q: string) {
   "use cache";
   cacheLife("minutes");

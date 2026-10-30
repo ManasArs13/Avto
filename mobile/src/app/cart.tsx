@@ -2,7 +2,7 @@ import { ApiError, formatPrice } from '@avto/shared';
 import { useState } from 'react';
 import { Alert, View } from 'react-native';
 
-import { Button, Card, Input, Label, Screen, Title } from '@/components/ui';
+import { Button, Card, Checkbox, DocLink, Input, Label, Screen, Title } from '@/components/ui';
 import { api } from '@/lib/api';
 import { cart, useCart } from '@/lib/cart';
 import { useSession } from '@/lib/session';
@@ -13,6 +13,7 @@ export default function CartScreen() {
   const customer = useSession()?.customer;
   const [name, setName] = useState(customer?.name ?? '');
   const [phone, setPhone] = useState(customer?.phone ?? '');
+  const [consent, setConsent] = useState(false);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [submitting, setSubmitting] = useState(false);
 
@@ -27,6 +28,8 @@ export default function CartScreen() {
         contact_email: customer?.email,
         delivery_method: 'pickup',
         payment_method: 'on_receipt',
+        // Покупатель с аккаунтом дал согласие при регистрации; гость — здесь.
+        ...(customer ? {} : { consent_personal_data: consent }),
       });
       cart.clear();
       Alert.alert(`Заказ № ${order.number} оформлен`, 'Мы позвоним для подтверждения.');
@@ -78,6 +81,15 @@ export default function CartScreen() {
           error={errors.contact_phone?.[0]}
         />
         <Label muted>Самовывоз из магазина, оплата при получении.</Label>
+        {!customer && (
+          <Checkbox checked={consent} onChange={setConsent} error={errors.consent_personal_data?.[0]}>
+            Даю <DocLink slug="personal-data-consent">согласие на обработку персональных данных</DocLink>
+          </Checkbox>
+        )}
+        <Label muted style={{ fontSize: 13 }}>
+          Оформляя заказ, вы принимаете условия <DocLink slug="offer">публичной оферты</DocLink> и{' '}
+          <DocLink slug="returns">возврата</DocLink>.
+        </Label>
       </Card>
 
       {itemErrors.map(([k, v]) => (

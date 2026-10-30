@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 
 import { Spacing } from '@/constants/theme';
+import { openDocument } from '@/lib/api';
 import { useTheme } from '@/hooks/use-theme';
 
 // Минимальный набор элементов интерфейса в фирменных цветах.
@@ -108,5 +109,51 @@ const styles = StyleSheet.create({
   card: { borderRadius: 12, borderWidth: StyleSheet.hairlineWidth * 2, padding: Spacing.three, gap: Spacing.two },
   button: { borderRadius: 10, paddingVertical: 12, paddingHorizontal: Spacing.three, alignItems: 'center' },
   buttonText: { fontSize: 15, fontWeight: '600' },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 2, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
   input: { borderRadius: 10, borderWidth: StyleSheet.hairlineWidth * 2, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
 });
+
+/** Галочка согласия: по умолчанию не отмечена (152-ФЗ). */
+export function Checkbox({
+  checked,
+  onChange,
+  children,
+  error,
+}: {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+  children: ReactNode;
+  error?: string;
+}) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="checkbox"
+      accessibilityState={{ checked }}
+      onPress={() => onChange(!checked)}
+      style={{ flexDirection: 'row', gap: Spacing.two, alignItems: 'flex-start' }}>
+      <View
+        style={[
+          styles.checkbox,
+          { borderColor: error ? theme.danger : theme.border },
+          checked && { backgroundColor: theme.accent, borderColor: theme.accent },
+        ]}>
+        {checked && <Text style={{ color: '#fff', fontSize: 14, fontWeight: '800' }}>✓</Text>}
+      </View>
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={{ color: theme.text, fontSize: 14, lineHeight: 20 }}>{children}</Text>
+        {error && <Text style={{ color: theme.danger, fontSize: 13 }}>{error}</Text>}
+      </View>
+    </Pressable>
+  );
+}
+
+/** Ссылка на документ на сайте (открывается во встроенном браузере). */
+export function DocLink({ slug, children }: { slug: string; children: ReactNode }) {
+  const theme = useTheme();
+  return (
+    <Text style={{ color: theme.accent }} onPress={() => openDocument(slug)}>
+      {children}
+    </Text>
+  );
+}

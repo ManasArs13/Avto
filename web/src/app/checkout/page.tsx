@@ -4,6 +4,7 @@ import { ApiError, formatPrice, type DeliveryMethod, type PaymentMethod } from "
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ConsentCheckbox, DocLink } from "@/components/consent-checkbox";
 import { Field } from "@/components/field";
 import { authApi, useSession } from "@/lib/auth";
 import { cart, useCart } from "@/lib/cart";
@@ -59,6 +60,8 @@ export default function CheckoutPage() {
         delivery_address: String(form.get("delivery_address") || "") || undefined,
         payment_method: String(form.get("payment_method")) as PaymentMethod,
         comment: String(form.get("comment") || "") || undefined,
+        // Покупатель с аккаунтом уже дал согласие при регистрации.
+        ...(customer ? {} : { consent_personal_data: form.get("consent_personal_data") === "1" }),
       });
       cart.clear();
       router.push(`/order/${order.number}?phone=${encodeURIComponent(phone)}`);
@@ -160,6 +163,15 @@ export default function CheckoutPage() {
           <span>Итого</span>
           <span className="tabular-nums">{formatPrice(total + deliveryCost)}</span>
         </div>
+        {!customer && (
+          <ConsentCheckbox name="consent_personal_data" required error={errors.consent_personal_data?.[0]}>
+            Даю <DocLink slug="personal-data-consent">согласие на обработку персональных данных</DocLink>
+          </ConsentCheckbox>
+        )}
+        <p className="text-xs text-muted">
+          Нажимая «Подтвердить заказ», вы принимаете условия <DocLink slug="offer">публичной оферты</DocLink>,{" "}
+          <DocLink slug="delivery">доставки и оплаты</DocLink> и <DocLink slug="returns">возврата</DocLink>.
+        </p>
         {message && <p className="text-sm text-red-600">{message}</p>}
         {itemErrors.map(([k, v]) => (
           <p key={k} className="text-sm text-red-600">

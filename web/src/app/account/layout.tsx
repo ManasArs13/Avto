@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 
+// Кабинет целиком клиентский и зависит от входа покупателя — мгновенную навигацию для него не проверяем.
+export const instant = false;
+
 export const metadata: Metadata = {
   title: "Личный кабинет",
   robots: { index: false, follow: false },

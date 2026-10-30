@@ -7,7 +7,9 @@ use App\Models\CarMake;
 use App\Models\CarModel;
 use App\Models\CarModification;
 use App\Models\Category;
+use App\Models\Consent;
 use App\Models\Customer;
+use App\Models\LegalDocument;
 use App\Models\MarkupRule;
 use App\Models\Offer;
 use App\Models\Order;
@@ -16,6 +18,8 @@ use App\Models\PriceImport;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Policies\ConsentPolicy;
+use App\Policies\LegalDocumentPolicy;
 use App\Policies\StaffPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Support\Facades\Gate;
@@ -49,5 +53,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(LegalDocument::class, LegalDocumentPolicy::class);
+        Gate::policy(Consent::class, ConsentPolicy::class);
     }
 }

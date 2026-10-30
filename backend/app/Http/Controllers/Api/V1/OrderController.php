@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Enums\ConsentType;
 use App\Enums\DeliveryMethod;
 use App\Enums\PaymentMethod;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\OrderResource;
+use App\Models\Consent;
 use App\Models\Order;
 use App\Services\OrderService;
 use Illuminate\Http\Request;
@@ -22,6 +24,9 @@ class OrderController extends Controller
      */
     public function store(Request $request): OrderResource
     {
+        // Маршрут публичный, поэтому токен проверяем вручную: гость тоже может оформить заказ.
+        $customer = Auth::guard('sanctum')->user();
+
         $data = $request->validate([
             'items' => ['required', 'array', 'min:1', 'max:100'],
             'items.*.offer_id' => ['required', 'integer'],
@@ -36,12 +41,19 @@ class OrderController extends Controller
             ],
             'payment_method' => ['required', Rule::enum(PaymentMethod::class)],
             'comment' => ['nullable', 'string', 'max:2000'],
+            // Гость даёт согласие на обработку ПДн при заказе; покупатель с аккаунтом — дал при регистрации.
+            // (accepted проверяется и для отсутствующего поля, поэтому для покупателя поле исключаем.)
+            'consent_personal_data' => $customer ? ['exclude'] : ['accepted'],
+        ], [
+            'consent_personal_data.accepted' => 'Нужно согласие на обработку персональных данных.',
         ]);
 
-        // Маршрут публичный, поэтому токен проверяем вручную: гость тоже может оформить заказ.
-        $customer = Auth::guard('sanctum')->user();
+        $order = $this->orders->create($data, $customer);
+        if (! $customer) {
+            Consent::record(ConsentType::PersonalData, true, $request, order: $order);
+        }
 
-        return new OrderResource($this->orders->create($data, $customer));
+        return new OrderResource($order);
     }
 
     public function index(Request $request): AnonymousResourceCollection

@@ -9,10 +9,12 @@ import type {
   CreateOrderPayload,
   Customer,
   GarageVehicle,
+  LegalDocument,
   Order,
   Paginated,
   Product,
   ProductDetails,
+  ShopInfo,
   SitemapData,
 } from "./types";
 
@@ -85,14 +87,35 @@ export function createApiClient({ baseUrl, getToken }: ApiClientOptions) {
       products: (page: number) => get<[number, string][]>(`/sitemap/products/${page}`),
     },
     auth: {
-      register: (data: { name: string; email: string; password: string; phone?: string; device_name?: string }) =>
+      register: (data: {
+        name: string;
+        email: string;
+        password: string;
+        phone?: string;
+        device_name?: string;
+        consent_personal_data: boolean;
+        consent_marketing?: boolean;
+      }) =>
         post<{ token: string; customer: Customer }>("/auth/register", data),
       login: (data: { email: string; password: string; device_name?: string }) =>
         post<{ token: string; customer: Customer }>("/auth/login", data),
       logout: () => request<{ message: string }>("/auth/logout", { method: "POST" }),
       me: () => get<Customer>("/auth/me"),
-      update: (data: { name?: string; phone?: string | null; current_password?: string; password?: string }) =>
+      update: (data: {
+        name?: string;
+        phone?: string | null;
+        current_password?: string;
+        password?: string;
+        marketing_consent?: boolean;
+      }) =>
         request<{ data: Customer }>("/auth/me", { method: "PATCH", body: JSON.stringify(data) }).then((r) => r.data),
+      /** Удаление аккаунта = отзыв согласия на обработку ПДн. Заказы остаются у магазина без привязки к аккаунту. */
+      deleteAccount: (password: string) =>
+        request<{ message: string }>("/auth/me", { method: "DELETE", body: JSON.stringify({ password }) }),
+    },
+    legal: {
+      shop: () => get<ShopInfo>("/shop"),
+      document: (slug: string) => get<LegalDocument>(`/legal/${encodeURIComponent(slug)}`),
     },
     garage: {
       list: () => get<GarageVehicle[]>("/garage"),

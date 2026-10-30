@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\GarageController;
+use App\Http\Controllers\Api\V1\LegalController;
 use App\Http\Controllers\Api\V1\OrderController;
 use App\Http\Controllers\Api\V1\SitemapController;
 use App\Http\Controllers\Api\V1\VehicleController;
@@ -20,6 +21,10 @@ Route::prefix('v1')->group(function () {
     // Без throttle: поиск рендерит сервер Next.js, и все покупатели пришли бы с одного IP.
     Route::get('search', [CatalogController::class, 'search']);
     Route::get('products/{product}', [CatalogController::class, 'product']);
+
+    // Реквизиты продавца и документы (политика ПДн, оферта, возврат…)
+    Route::get('shop', [LegalController::class, 'shop']);
+    Route::get('legal/{document:slug}', [LegalController::class, 'document']);
 
     // Для sitemap.xml витрины
     Route::get('sitemap', [SitemapController::class, 'index']);
@@ -43,6 +48,7 @@ Route::prefix('v1')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('auth/me', [AuthController::class, 'me']);
         Route::patch('auth/me', [AuthController::class, 'update'])->middleware('throttle:10,1');
+        Route::delete('auth/me', [AuthController::class, 'destroy'])->middleware('throttle:5,1');
         Route::post('auth/logout', [AuthController::class, 'logout']);
         Route::get('orders', [OrderController::class, 'index']);
 

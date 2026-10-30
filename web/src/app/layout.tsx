@@ -3,8 +3,10 @@ import { Inter } from "next/font/google";
 import Link from "next/link";
 import { AccountLink } from "@/components/account-link";
 import { CartLink } from "@/components/cart-link";
+import { CookieNotice } from "@/components/cookie-notice";
 import { Logo } from "@/components/logo";
 import { SearchForm } from "@/components/search-form";
+import { SiteFooter } from "@/components/site-footer";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -51,9 +53,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
 
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:py-8">{children}</main>
 
-        <footer className="border-t border-border py-6 text-center text-sm text-muted">
-          Avto · оригинальные запчасти ВАЗ · демо-витрина, данные каталога условные
-        </footer>
+        <SiteFooter />
+        <CookieNotice />
       </body>
     </html>
   );

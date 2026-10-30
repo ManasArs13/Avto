@@ -9,7 +9,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
 // Покупатель. Авторизация через Sanctum-токены (сайт и мобильное приложение).
-#[Fillable(['name', 'email', 'phone', 'password', 'discount_percent'])]
+#[Fillable(['name', 'email', 'phone', 'password', 'discount_percent', 'marketing_consent'])]
 #[Hidden(['password'])]
 class Customer extends Authenticatable
 {
@@ -20,12 +20,18 @@ class Customer extends Authenticatable
         return [
             'password' => 'hashed',
             'discount_percent' => 'decimal:2',
+            'marketing_consent' => 'boolean',
         ];
     }
 
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class)->latest();
+    }
+
+    public function consents(): HasMany
+    {
+        return $this->hasMany(Consent::class)->latest('id');
     }
 
     public function vehicles(): HasMany

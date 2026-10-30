@@ -60,3 +60,31 @@ body {
 .article {
   @apply font-mono font-semibold tracking-tight;
 }
+
+/* Тексты документов (/legal/...) из Markdown */
+.legal {
+  @apply space-y-3 text-sm leading-relaxed;
+}
+.legal h2 {
+  @apply pt-3 text-lg font-bold;
+}
+.legal ul,
+.legal ol {
+  @apply list-outside space-y-1 pl-5;
+}
+.legal ul {
+  @apply list-disc;
+}
+.legal ol {
+  @apply list-decimal;
+}
+.legal a {
+  @apply text-accent hover:underline;
+}
+.legal table {
+  @apply block w-full overflow-x-auto border-collapse text-left;
+}
+.legal th,
+.legal td {
+  @apply border border-border px-3 py-2 align-top;
+}

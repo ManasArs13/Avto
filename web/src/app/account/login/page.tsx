@@ -3,6 +3,7 @@
 import { ApiError } from "@avto/shared";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { ConsentCheckbox, DocLink } from "@/components/consent-checkbox";
 import { Field } from "@/components/field";
 import { authApi, setSession } from "@/lib/auth";
 
@@ -31,6 +32,8 @@ export default function LoginPage() {
               phone: value("phone") || undefined,
               password: value("password"),
               device_name: "web",
+              consent_personal_data: form.get("consent_personal_data") === "1",
+              consent_marketing: form.get("consent_marketing") === "1",
             });
       setSession(session);
       router.replace("/account");
@@ -81,6 +84,18 @@ export default function LoginPage() {
           minLength={mode === "register" ? 8 : undefined}
           autoComplete={mode === "login" ? "current-password" : "new-password"}
         />
+        {mode === "register" && (
+          <div className="space-y-2 pt-1">
+            <ConsentCheckbox name="consent_personal_data" required error={errors.consent_personal_data?.[0]}>
+              Даю <DocLink slug="personal-data-consent">согласие на обработку персональных данных</DocLink> и
+              подтверждаю, что ознакомлен(а) с <DocLink slug="privacy">Политикой обработки персональных данных</DocLink>
+            </ConsentCheckbox>
+            <ConsentCheckbox name="consent_marketing">
+              Хочу получать новости и скидки (<DocLink slug="marketing-consent">согласие на рассылки</DocLink>) —
+              необязательно
+            </ConsentCheckbox>
+          </div>
+        )}
         {message && <p className="text-sm text-red-600">{message}</p>}
         <button type="submit" className="btn w-full py-3" disabled={submitting}>
           {submitting ? "Подождите…" : mode === "login" ? "Войти" : "Зарегистрироваться"}

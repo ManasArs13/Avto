@@ -154,6 +154,8 @@ export interface CreateOrderPayload {
   delivery_address?: string;
   payment_method: PaymentMethod;
   comment?: string;
+  /** Обязательно для гостя (152-ФЗ); покупатель с аккаунтом дал согласие при регистрации. */
+  consent_personal_data?: boolean;
 }
 
 export interface Customer {
@@ -162,9 +164,38 @@ export interface Customer {
   email: string;
   phone: string | null;
   discount_percent: string;
+  /** Согласие на рекламные рассылки (38-ФЗ). */
+  marketing_consent: boolean;
 }
 
 export interface Paginated<T> {
   data: T[];
   meta: { current_page: number; last_page: number; total: number; per_page: number };
+}
+
+/** Реквизиты продавца и список документов для покупателей. */
+export interface ShopInfo {
+  details: Record<
+    | "shop_name"
+    | "legal_name"
+    | "inn"
+    | "ogrn"
+    | "legal_address"
+    | "store_address"
+    | "phone"
+    | "email"
+    | "work_hours"
+    | "site_url",
+    string
+  >;
+  documents: { slug: string; title: string }[];
+}
+
+export interface LegalDocument {
+  slug: string;
+  title: string;
+  version: number;
+  updated_at: string | null;
+  /** HTML из Markdown; сырой HTML в исходном тексте экранирован на сервере. */
+  html: string;
 }
